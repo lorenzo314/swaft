@@ -1,9 +1,3 @@
-# ONLY AUTOMATIC DOWNLOAD IMPLEMENTED FOR NOW
-# NO ARGUMENTS PASSED TO THE MAIN FUNCTION
-# TODO: Implement manual download
-# TODO: Settle the args issue in DAGS
-# TODO: Clarify if it is possible to use DAG params with TaskFlow
-
 import pathlib
 import pandas as pd
 import json

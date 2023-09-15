@@ -6,6 +6,8 @@ import ace_utils_raw as aur
 
 import ace_utils_silver as aus
 
+import swaft_utils as su
+
 
 @dag(
     schedule="35 8 * * *",
@@ -14,11 +16,14 @@ import ace_utils_silver as aus
     tags=["ace_silver"]
 )
 def getACE_tasksilver():
-    # Get the start and en dates and the directory path
+    # Get the directory path
+    # The directory path is a local one
+    passed_arguments_dict = su.initialize_directory_path()
+
+    # Get the start and end dates
     # Retrieves the current day as start date and One as end date since
     # this is done in automatic mode
-    # The directory path is a local one
-    passed_arguments_dict = aur.initialize_date_and_directory_path()
+    passed_arguments_dict = aur.initialize_date(passed_arguments_dict)
 
     # Get the date range to query
     # In automatic mode it is just the current date

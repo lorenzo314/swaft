@@ -14,6 +14,7 @@ from datetime import datetime
 from urllib import request
 import re
 import requests
+import swaft_utils as su
 
 from airflow.decorators import task
 
@@ -23,7 +24,7 @@ from google.cloud import storage
 
 
 @task()
-def initialize_date_and_directory_path():
+def initialize_date(passed_arguments_dict: dict):
     """
     Developed to test the DAG in local environment
     TODO: it will be necessary to settle the args issue in DAGS
@@ -34,14 +35,7 @@ def initialize_date_and_directory_path():
 
     # default: download the daily file
     start_date = datetime.now()
-
     end_date = None
-
-    raw_directory_path = \
-        "/home/lorenzo/spaceable/airflow_ace_scraping/raw_data"
-
-    silver_directory_path = \
-        "/home/lorenzo/spaceable/airflow_ace_scraping/silver_data"
 
     source = "https://services.swpc.noaa.gov/text/"
     # address Arnaud
@@ -50,14 +44,10 @@ def initialize_date_and_directory_path():
 
     # A DECORATED FUNCTION SHOULD RETURN A DICTIONARY,
     # OTHERWISE IT GIVES ERRORS
-    return {
-        "start_date": start_date,
-        "end_date": end_date,
-        "source": source,
-        "raw_directory_path": raw_directory_path,
-        "silver_directory_path": silver_directory_path,
-        "monthly": monthly,
-    }
+    passed_arguments_dict["start_date"] = start_date
+    passed_arguments_dict["end_date"] = end_date
+    passed_arguments_dict["source"] = source
+    passed_arguments_dict["monthly"] = monthly
 
 
 @task()
@@ -258,7 +248,7 @@ def download_data(passed_arguments_dict: dict):
 
     if list_url:
         for url in tqdm(list_url):
-            check_url = is_url(url)
+            check_url = su.is_url(url)
             if not check_url:
                 print(url + " doesn't exist")
             else:
@@ -292,95 +282,73 @@ def download_data(passed_arguments_dict: dict):
     return passed_arguments_dict
 
 
-def is_url(url):
-    """
-    Check if the passed url exists or not
-
-    INPUT:
-    param: url (str)
-    url to test
-
-    OUTPUT: True if the url exists, False if not
-    """
-    r = requests.get(url)
-    if r.status_code == 429:
-        print('Retry URL checking (429)')
-        time.sleep(5)
-        return is_url(url)
-    elif r.status_code == 404:
-        return False
-    else:
-        return True
-
-
-@task()
-def save_passed_arguments_locally(passed_arguments_dict: dict):
-    date_time = datetime.now()
-    str_date_time = date_time.strftime("%d%m%YT%H%M%S")
-    str_date_time = f"{str_date_time}.txt"
-    output_file = os.path.join(
-        passed_arguments_dict["raw_directory_path"],
-        str_date_time
-    )
-
-    with open(output_file, "w") as file:
-        if passed_arguments_dict["start_date"] is not None:
-            file.write(f'start_date {passed_arguments_dict["start_date"].strftime("%m/%d/%Y")}\n')
-        else:
-            file.write(f'start_date {str(None)}\n')
-
-        if passed_arguments_dict["end_date"] is not None:
-            file.write(
-                f'end_date {passed_arguments_dict["end_date"].strftime("%m/%d/%Y")}\n'
-            )
-        else:
-            file.write(f'end_date {str(None)}\n')
-
-        if passed_arguments_dict["source"] is not None:
-            file.write(f'source {passed_arguments_dict["source"]}\n')
-        else:
-            file.write(f'source {str(None)}\n')
-
-        if passed_arguments_dict["raw_directory_path"] is not None:
-            file.write(f'directory_path {passed_arguments_dict["raw_directory_path"]}\n')
-        else:
-            file.write(f'directory_path {str(None)}\n')
-
-        if passed_arguments_dict["dates_in_time_interval"] is not None:
-            dates_in_time_interval = passed_arguments_dict["dates_in_time_interval"]
-            assert type(dates_in_time_interval) == list
-            for i in dates_in_time_interval:
-                assert type(i) == str
-                file.write(f'dates_in_time_interval {i}\n')
-        else:
-            file.write(f'dates_in_time_interval {str(None)}\n')
-
-        if passed_arguments_dict["measuring_devices"] is not None:
-            measuring_devices = passed_arguments_dict["measuring_devices"]
-            assert type(measuring_devices) == list
-            for i in measuring_devices:
-                file.write(f'measuring device {i}\n')
-        else:
-            file.write(f'measuring devices {str(None)}\n')
-
-        if passed_arguments_dict["list_url"] is not None:
-            list_url = passed_arguments_dict["list_url"]
-            assert type(list_url) == list
-            for i in list_url:
-                file.write(f'url {i}\n')
-        else:
-            file.write(f'list url {str(None)}\n')
-
-        if passed_arguments_dict["output_files"] is not None:
-            output_files = passed_arguments_dict["output_files"]
-            assert type(output_files) == list
-            for i in output_files:
-                file.write(f'output file {i}\n')
-        else:
-            file.write(f'output_files {str(None)}\n')
-
-    return passed_arguments_dict
-
+# @task()
+# def save_passed_arguments_locally(passed_arguments_dict: dict):
+#     date_time = datetime.now()
+#     str_date_time = date_time.strftime("%d%m%YT%H%M%S")
+#     str_date_time = f"{str_date_time}.txt"
+#     output_file = os.path.join(
+#         passed_arguments_dict["raw_directory_path"],
+#         str_date_time
+#     )
+#
+#     with open(output_file, "w") as file:
+#         if passed_arguments_dict["start_date"] is not None:
+#             file.write(f'start_date {passed_arguments_dict["start_date"].strftime("%m/%d/%Y")}\n')
+#         else:
+#             file.write(f'start_date {str(None)}\n')
+#
+#         if passed_arguments_dict["end_date"] is not None:
+#             file.write(
+#                 f'end_date {passed_arguments_dict["end_date"].strftime("%m/%d/%Y")}\n'
+#             )
+#         else:
+#             file.write(f'end_date {str(None)}\n')
+#
+#         if passed_arguments_dict["source"] is not None:
+#             file.write(f'source {passed_arguments_dict["source"]}\n')
+#         else:
+#             file.write(f'source {str(None)}\n')
+#
+#         if passed_arguments_dict["raw_directory_path"] is not None:
+#             file.write(f'directory_path {passed_arguments_dict["raw_directory_path"]}\n')
+#         else:
+#             file.write(f'directory_path {str(None)}\n')
+#
+#         if passed_arguments_dict["dates_in_time_interval"] is not None:
+#             dates_in_time_interval = passed_arguments_dict["dates_in_time_interval"]
+#             assert type(dates_in_time_interval) == list
+#             for i in dates_in_time_interval:
+#                 assert type(i) == str
+#                 file.write(f'dates_in_time_interval {i}\n')
+#         else:
+#             file.write(f'dates_in_time_interval {str(None)}\n')
+#
+#         if passed_arguments_dict["measuring_devices"] is not None:
+#             measuring_devices = passed_arguments_dict["measuring_devices"]
+#             assert type(measuring_devices) == list
+#             for i in measuring_devices:
+#                 file.write(f'measuring device {i}\n')
+#         else:
+#             file.write(f'measuring devices {str(None)}\n')
+#
+#         if passed_arguments_dict["list_url"] is not None:
+#             list_url = passed_arguments_dict["list_url"]
+#             assert type(list_url) == list
+#             for i in list_url:
+#                 file.write(f'url {i}\n')
+#         else:
+#             file.write(f'list url {str(None)}\n')
+#
+#         if passed_arguments_dict["output_files"] is not None:
+#             output_files = passed_arguments_dict["output_files"]
+#             assert type(output_files) == list
+#             for i in output_files:
+#                 file.write(f'output file {i}\n')
+#         else:
+#             file.write(f'output_files {str(None)}\n')
+#
+#     return passed_arguments_dict
 
 # Copied from
 # spaceable\python-storage\samples\snippets\storage_upload_file.py
@@ -406,11 +374,6 @@ def upload_raw(passed_arguments_dict: dict):
     # There are several files to upload, one for each instrument
     output_files = passed_arguments_dict["output_files"]
 
-    print('_______________________________')
-    for i in output_files:
-        print(i)
-    print('_______________________________')
-
     # TODO; fill
     # destination_blob_name = .....
 
@@ -420,32 +383,14 @@ def upload_raw(passed_arguments_dict: dict):
     for i in output_files:
         destination_blob_name = i
         blob = bucket.blob(destination_blob_name)
-
         generation_match_precondition = 0
-
         source_file_name = i
-
         blob.upload_from_filename(
             source_file_name,
             if_generation_match=generation_match_precondition
         )
-
         print(
             f"File {source_file_name} uploaded to {destination_blob_name}."
         )
 
     return passed_arguments_dict
-
-    # Optional: set a generation-match precondition to avoid potential race conditions
-    # and data corruptions. The request to upload is aborted if the object's
-    # generation number does not match your precondition. For a destination
-    # object that does not yet exist, set the if_generation_match precondition to 0.
-    # If the destination object already exists in your bucket, set instead a
-    # generation-match precondition using its generation number.
-    # generation_match_precondition = 0
-
-    # blob.upload_from_filename(source_file_name, if_generation_match=generation_match_precondition)
-    #
-    # print(
-    #     f"File {source_file_name} uploaded to {destination_blob_name}."
-    # )

@@ -4,6 +4,8 @@ from airflow.decorators import dag
 
 import ace_utils_raw as aur
 
+import swaft_utils as su
+
 
 @dag(
     schedule="35 8 * * *",
@@ -12,11 +14,14 @@ import ace_utils_raw as aur
     tags=["ace_raw"]
 )
 def getACE_taskraw():
-    # Get the start and en dates and the directory path
+    # Get the directory path
+    # The directory path is a local one
+    passed_arguments_dict = su.initialize_directory_path()
+
+    # Get the start and end dates
     # Retrieves the current day as start date and One as end date since
     # this is done in automatic mode
-    # The directory path is a local one
-    passed_arguments_dict = aur.initialize_date_and_directory_path()
+    passed_arguments_dict = aur.initialize_date(passed_arguments_dict)
 
     # Get the date range to query
     # In automatic mode it is just the current date
@@ -40,7 +45,7 @@ def getACE_taskraw():
     passed_arguments_dict = aur.upload_raw(passed_arguments_dict)
 
     # Save parameters on local file
-    passed_arguments_dict = aur.save_passed_arguments_locally(passed_arguments_dict)
+    # passed_arguments_dict = aur.save_passed_arguments_locally(passed_arguments_dict)
 
 
 getACE_taskraw()
